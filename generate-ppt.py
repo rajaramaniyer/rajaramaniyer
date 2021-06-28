@@ -48,10 +48,15 @@ lyricsdata = csv.reader(open('lyrics.csv', encoding="UTF-8"))
 prs = Presentation('template.pptx')
 bullet_slide = prs.slide_layouts[1]
 title_slide = prs.slide_layouts[0]
+adyayam=""
 slide = prs.slides.add_slide(title_slide)
 shapes = slide.shapes
 title_shape = shapes.title
 title_shape.text = titletext
+picture = shapes.placeholders[10].insert_picture('C:/Users/rajar/Pictures/Bhagavatham10/' + sys.argv[1] + '.png')
+shapes.placeholders[13].text_frame.text = "श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां"
+shapes.placeholders[14].text_frame.text = "दशमः स्कन्दः"
+shapes.placeholders[15].text_frame.text = "श्रीमद्भागवतमहापुराणम्"
 body_shape = shapes.placeholders[12]
 #
 # For checking contents of the slide
@@ -66,6 +71,7 @@ for row in lyricsdata:
   if len(row) > 0:
     if not firstrow:
       body_shape.text_frame.text = row[0]
+      adyayam = row[0]
       firstrow=True
     else:
       lines.append(row)
@@ -76,6 +82,15 @@ for row in lyricsdata:
         lines=[]
 if len(lines) > 0:
   create_slides(lines)
+
+slide = prs.slides.add_slide(title_slide)
+shapes = slide.shapes
+title_shape = shapes.title
+title_shape.text = titletext
+picture = shapes.placeholders[10].insert_picture('C:/Users/rajar/Pictures/Bhagavatham10/' + sys.argv[1] + '.png')
+shapes.placeholders[13].text_frame.text = "इति श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां"
+shapes.placeholders[14].text_frame.text = "दशमस्कन्धे पूर्वार्धे"
+shapes.placeholders[12].text_frame.text = adyayam.replace("अथ ","")
 
 prs.save('generated-ppt.pptx')
 
@@ -94,3 +109,5 @@ prs.save('generated-ppt.pptx')
 #    if top > Inches(6):
 #      top = Inches(1)
 #      slide = prs.slides.add_slide(blank_slide_layout)
+#
+# gci Slide*.jpg | ren -n {[regex]::replace($_.Name, '\d+', {"$args".PadLeft(4, '0')})}
