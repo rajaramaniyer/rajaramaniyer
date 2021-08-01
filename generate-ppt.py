@@ -4,19 +4,26 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 import sys
 import csv
+import subprocess
+import os
+import glob
+import time
 
+#Create multiple blue highlighted content slide
 def create_slides(lines):
-  space = ""
+  slidecount=0
   next_space = ""
   for count in lines:
     if " " != count[0]:
       slide = prs.slides.add_slide(bullet_slide)
+      slidecount = slidecount + 1
       shapes = slide.shapes
       title_shape = shapes.title
       body_shape = shapes.placeholders[1]
       title_shape.text = titletext
       tf = body_shape.text_frame
       p = tf.paragraphs[0]
+      space = ""
       for row in lines:
         line_color = RGBColor(0x00, 0x00, 0x00)
         next_space = ""
@@ -24,7 +31,7 @@ def create_slides(lines):
           next_space = "    "
         if " " == row[0]:
           next_space = ""
-        if "उवाच" in row[0] or "इति श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां" in row[0]:
+        if row[0].strip().endswith("वाच") or row[0].strip().endswith("ऊचुः") or "इति श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां" in row[0]:
           line_color = RGBColor(0xFF, 0x7F, 0x50)
           next_space = ""
         if row == count:
@@ -34,39 +41,47 @@ def create_slides(lines):
         font = run.font
         font.color.rgb = line_color
         space = next_space
+  return slidecount
 #end create_slides
 
 #
 # Main Code Starts
 #
 if len(sys.argv) != 2:
-  print ("Pass Adhyayam Number")
-  sys.exit(1)
+  adyayam_number = input ("Adhyayam Number: ")
+else:
+  adyayam_number=sys.argv[1]
 
-titletext='SRIMAD BHAGAVATHAM - SKANDAM 10 ADHYAYA ' + sys.argv[1]
-lyricsdata = csv.reader(open('lyrics.csv', encoding="UTF-8"))
-prs = Presentation('template.pptx')
+titletext='SRIMAD BHAGAVATHAM - SKANDAM 10 ADHYAYA ' + adyayam_number
+lyricsdata = csv.reader(open('C:/Users/rajar/srimad_bhaghavatham/sanskrit/canto10/chapter'+adyayam_number+".txt", encoding="UTF-8"))
+prs = Presentation('template.pptm')
 bullet_slide = prs.slide_layouts[1]
 title_slide = prs.slide_layouts[0]
 adyayam=""
+last_line=""
+
+## First Slide
 slide = prs.slides.add_slide(title_slide)
 shapes = slide.shapes
 title_shape = shapes.title
 title_shape.text = titletext
-picture = shapes.placeholders[10].insert_picture('C:/Users/rajar/Pictures/Bhagavatham10/' + sys.argv[1] + '.png')
+picture = shapes.placeholders[10].insert_picture('C:/Users/rajar/Pictures/Bhagavatham10/' + adyayam_number + '.png')
 shapes.placeholders[13].text_frame.text = "श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां"
 shapes.placeholders[14].text_frame.text = "दशमः स्कन्दः"
 shapes.placeholders[15].text_frame.text = "श्रीमद्भागवतमहापुराणम्"
 body_shape = shapes.placeholders[12]
+
 #
-# For checking contents of the slide
+# Debug only: For checking contents of the slide
 #for shape in slide.placeholders:
 #  print('%d %s' % (shape.placeholder_format.idx, shape.name))
 
+## Main Loop to add content slides
 firstrow=False
 line=0
 count=0
 lines=[]
+slidecount=1
 for row in lyricsdata:
   if len(row) > 0:
     if not firstrow:
@@ -74,40 +89,53 @@ for row in lyricsdata:
       adyayam = row[0]
       firstrow=True
     else:
-      lines.append(row)
-      line = line + 1
-      if line > 7:
-        create_slides(lines)
-        line = 0
-        lines=[]
+      if "इति श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां" in row[0]:
+        last_line = row[0]
+      else:
+        lines.append(row)
+        line = line + 1
+        if line > 7:
+          #Create multiple blue highlighted content slide
+          slidecount = slidecount + create_slides(lines)
+          line = 0
+          lines=[]
 if len(lines) > 0:
-  create_slides(lines)
+  slidecount = slidecount + create_slides(lines)
 
+## Last Ending Slide
 slide = prs.slides.add_slide(title_slide)
+slidecount = slidecount + 1
 shapes = slide.shapes
 title_shape = shapes.title
 title_shape.text = titletext
-picture = shapes.placeholders[10].insert_picture('C:/Users/rajar/Pictures/Bhagavatham10/' + sys.argv[1] + '.png')
+picture = shapes.placeholders[10].insert_picture('C:/Users/rajar/Pictures/Bhagavatham10/' + adyayam_number + '.png')
 shapes.placeholders[13].text_frame.text = "इति श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां"
-shapes.placeholders[14].text_frame.text = "दशमस्कन्धे पूर्वार्धे"
-shapes.placeholders[12].text_frame.text = adyayam.replace("अथ ","")
 
-prs.save('generated-ppt.pptx')
+found=False
+last_line_words=last_line.replace("इति श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां ","").split(" ")
+for word in last_line_words:
+  if "ऽध्यायः" in word:
+    found=True
+  if not found:
+    shapes.placeholders[14].text_frame.text = shapes.placeholders[14].text_frame.text + " " + word
+  else:
+    shapes.placeholders[12].text_frame.text = shapes.placeholders[12].text_frame.text + " " + word
 
-#blank_slide_layout = prs.slide_layouts[6]
-#slide = prs.slides.add_slide(blank_slide_layout)
-#
-#left = top = Inches(1)
-#width = Inches(11)
-#height = Inches(0.5)
-#
-#for row in lyricsdata:
-#  if len(row) > 0:
-#    txBox = slide.shapes.add_textbox(left, top, width, height)
-#    txBox.text_frame.text = row[0]
-#    top = top + Inches(0.5)
-#    if top > Inches(6):
-#      top = Inches(1)
-#      slide = prs.slides.add_slide(blank_slide_layout)
-#
-# gci Slide*.jpg | ren -n {[regex]::replace($_.Name, '\d+', {"$args".PadLeft(4, '0')})}
+prs.save('generated-ppt.pptm')
+
+print ("Generated. Slide Count = ", slidecount)
+next_action=input ("Export JPG (e) / Open (o): ")
+if next_action == "e":
+  files = glob.glob('Slide????.jpg')
+  for f in files:
+    try:
+        os.remove(f)
+    except OSError as e:
+        print("Error: %s : %s" % (f, e.strerror))
+  p = subprocess.Popen(["C:/Program Files/Microsoft Office 15/root/office15/POWERPNT.EXE", "/M", "generated-ppt.pptm", "Save_PowerPoint_Slide_as_Images"])
+  while not next(glob.iglob("Slide*" + str(slidecount) + ".jpg"), None):
+    time.sleep(1)
+  p.terminate()
+  p.wait()
+elif next_action == "o":
+  p = subprocess.Popen(["C:/Program Files/Microsoft Office 15/root/office15/POWERPNT.EXE", "generated-ppt.pptm"])
