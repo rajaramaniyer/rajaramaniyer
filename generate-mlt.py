@@ -2,18 +2,18 @@ import sys
 import os
 from os import path
 import glob
-import wave, struct, contextlib
+import wave, contextlib
 import uuid
-import datetime, time, math
-import re
+import time, math
 import xml.etree.ElementTree as ET
 from xml.dom.minidom import parseString
+import subprocess
 
 def getTimeString(totalmilliseconds):
-    milliseconds=str(round(totalmilliseconds)%1000).zfill(3)
-    hours=str(round(totalmilliseconds/1000/60/60)).zfill(2)
-    minutes=str(round((totalmilliseconds/1000/60)%60)).zfill(2)
-    seconds=str(round((totalmilliseconds/1000)%60)).zfill(2)
+    milliseconds=str(math.floor(totalmilliseconds)%1000).zfill(3)
+    hours=str(math.floor(totalmilliseconds/1000/60/60)).zfill(2)
+    minutes=str(math.floor((totalmilliseconds/1000/60)%60)).zfill(2)
+    seconds=str(math.floor((totalmilliseconds/1000)%60)).zfill(2)
     return "{hours}:{minutes}:{seconds}.{milliseconds}".format(hours=hours, minutes=minutes, seconds=seconds, milliseconds=milliseconds)
 
 #
@@ -34,21 +34,19 @@ f=open("adyayam_number.txt", "w")
 f.write(adyayam_number)
 f.close()
 
-if os.path.exists("c:/Users/rajar/Documents/Thirupavai/Exported/Bhagavatham"):
-    wavefilename="c:/Users/rajar/Documents/Thirupavai/Exported/Bhagavatham/10-" + str(adyayam_number) + ".wav"
-else:
-    wavefilename="10-" + str(adyayam_number) + ".wav"
+wavefilename="c:/Users/rajar/Documents/Thirupavai/Exported/Bhagavatham/10-" + str(adyayam_number) + ".wav"
+if not os.path.exists(wavefilename):
+    input(wavefilename + " does not exists")
+    sys.exit()
 
 duration="00:00:00.000"
 durationSeconds=0.0
 with contextlib.closing(wave.open(wavefilename,'r')) as f:
     frames = f.getnframes()
     rate = f.getframerate()
-    durationSeconds = frames / float(rate)
-    roundSeconds=math.floor(durationSeconds)
-    microframes=(math.ceil((durationSeconds-roundSeconds)*1000/25)*25)/1000
-    duration = datetime.timedelta(seconds=roundSeconds+microframes)
-    #print(durationSeconds, roundSeconds, microframes, duration)
+    durationMilliSeconds = round(float(frames) / float(rate) * 1000.0)
+    duration = getTimeString(durationMilliSeconds)
+    #print(frames, rate, durationMilliSeconds, duration)
     #mins=0
     #roundSeconds=math.floor(seconds)
     #print(seconds, roundSeconds, math.floor((seconds-roundSeconds)*1000/25)*25)
@@ -64,12 +62,14 @@ with contextlib.closing(wave.open(wavefilename,'r')) as f:
 # #audioframes=round(frames / float(rate) * 25)
 # wavefile.close()
 
-if os.path.exists('adhyayam' + str(adyayam_number) + '.txt'):
-    file1 = open('adhyayam' + str(adyayam_number) + '.txt', 'r')
-    labelTrack = file1.readlines()
-    file1.close()
-else:
-    labelTrack = []
+labelTrackFile='adhyayam' + str(adyayam_number) + '.txt'
+if not os.path.exists(labelTrackFile):
+    input(labelTrackFile + " does not exists")
+    sys.exit()
+
+file1 = open(labelTrackFile, 'r')
+labelTrack = file1.readlines()
+file1.close()
 
 audioHash=uuid.uuid4().hex
 
@@ -79,6 +79,7 @@ block3=[]
 block4=[]
 block2.append('  <playlist id="main_bin">\n')
 block2.append('    <property name="xml_retain">1</property>\n')
+block2.append('    <entry producer="chain0" in="00:00:00.000" out="{}"/>\n'.format(duration))
 #
 block4.append('  <playlist id="playlist0">\n')
 block4.append('    <property name="shotcut:video">1</property>\n')
@@ -87,8 +88,8 @@ block4.append('    <property name="shotcut:name">V1</property>\n')
 id=0
 files=sorted(glob.glob("Slide????.jpg"))
 
-equalslideduration=datetime.timedelta(seconds=durationSeconds/len(files))
-if len(labelTrack) > 0 and len(files) != len(labelTrack):
+equalslideduration=getTimeString(round(durationMilliSeconds/len(files)))
+if len(labelTrack) > 0 and len(files)-1 != len(labelTrack):
     if len(labelTrack) < len(files):
         prev=-1
         for label in labelTrack:
@@ -106,11 +107,16 @@ if len(labelTrack) > 0 and len(files) != len(labelTrack):
 id=0
 currentTime=time.strftime("%Y-%m-%dT%H:%M:%S",time.localtime())
 prevmarker=0
+prevlabelpos=0.0
 for slidename in files:
     if id < len(labelTrack):
         durationParts = labelTrack[id].split("\t")
         mins=0
-        seconds=float(durationParts[1]) - float(durationParts[0])
+        if float(durationParts[1]) - float(durationParts[0]) == 0:
+            seconds=float(durationParts[0])-prevlabelpos
+            prevlabelpos=float(durationParts[0])
+        else:
+            seconds=float(durationParts[1]) - float(durationParts[0])
         roundSeconds=math.floor(seconds)
         microframes=(math.floor((seconds-roundSeconds)*1000/25)*25)-25
         if microframes < 0:
@@ -189,7 +195,7 @@ block4.append('    <property name="shotcut:audio">1</property>\n')
 block4.append('    <property name="shotcut:name">A1</property>\n')
 block4.append('    <entry producer="chain1" in="00:00:00.000" out="{duration}"/>\n'.format(duration=duration))
 block4.append('  </playlist>\n')
-block4.append('  <tractor id="tractor0" title="Shotcut version 21.06.29" in="00:00:00.000" out="{duration}">\n'.format(duration=duration))
+block4.append('  <tractor id="tractor0" title="Shotcut version 21.10.31" in="00:00:00.000" out="{duration}">\n'.format(duration=duration))
 block4.append('    <property name="shotcut">1</property>\n')
 block4.append('    <property name="shotcut:projectAudioChannels">2</property>\n')
 block4.append('    <property name="shotcut:projectFolder">0</property>\n')
@@ -226,7 +232,7 @@ filename="adhyayam" + str(adyayam_number) + ".mlt"
 f = open(filename, "w")
 
 f.write('<?xml version="1.0" standalone="no"?>\n')
-f.write('<mlt LC_NUMERIC="C" version="7.1.0" title="Shotcut version 21.06.29" producer="main_bin">\n')
+f.write('<mlt LC_NUMERIC="C" version="7.1.0" title="Shotcut version 21.10.31" producer="main_bin">\n')
 f.write('  <profile description="PAL 4:3 DV or DVD" width="1920" height="1080" progressive="1" sample_aspect_num="1" sample_aspect_den="1" display_aspect_num="16" display_aspect_den="9" frame_rate_num="25" frame_rate_den="1" colorspace="709"/>\n')
 f.write('  <chain id="chain0" out="{duration}">\n'.format(duration=duration))
 f.write('    <property name="length">{duration}</property>\n'.format(duration=duration))
@@ -250,3 +256,5 @@ for block in block3:
 for block in block4:
     f.write(block)
 f.close();
+
+p = subprocess.Popen(["C:/Program Files/Shotcut/shotcut.exe", filename])

@@ -7,9 +7,19 @@ import wave, struct
 # Main Code Starts
 #
 if len(sys.argv) != 2:
-  adyayam_number = input ("Adhyayam Number: ")
+  file_adyayam_number=""
+  if path.exists("adyayam_number.txt"):
+    f=open("adyayam_number.txt")
+    file_adyayam_number = f.readlines()[0]
+    f.close()
+  adyayam_number = input ("Adhyayam Number(" + file_adyayam_number + "): ")
+  if adyayam_number == "" and file_adyayam_number != "":
+    adyayam_number = file_adyayam_number
 else:
-  adyayam_number=sys.argv[1]
+  adyayam_number = sys.argv[1]
+f=open("adyayam_number.txt", "w")
+f.write(adyayam_number)
+f.close()
 
 dir_path = os.path.dirname(os.path.realpath(__file__)).replace("\\","/")
 filename="adhyayam" + str(adyayam_number) + ".ove"

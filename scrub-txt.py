@@ -1,7 +1,8 @@
-#!/usr/bin/env python3
 from __future__ import print_function
 import sys
 import re
+import os.path
+from os import path
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -52,7 +53,7 @@ data=re.sub(r"-[१२३४५६७८९०]+(।|॥)\n", "",
       )
     )
   )
-data=re.sub(r"(.*)( लगते | अपनी | कर लो | करो | उतना | गिरते | सुनकर | हरा-भरा | ले लेते| लगाया | किसीका | इसी | बहुत | करती | इसमें | ओर )(.*)\n", "",
+data=re.sub(r"(.*)( लगते | तुम्हारी | आपकी | आपका | अपनी | कर लो | करो | उतना | गिरते | सुनकर | हरा-भरा | ले लेते| लगाया | किसीका | इसी | बहुत | करती | इसमें | ओर )(.*)\n", "",
   data
 )
 file.write(data)

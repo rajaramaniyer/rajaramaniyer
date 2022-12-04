@@ -3,6 +3,7 @@ from pptx import Presentation
 from pptx.util import Inches, Cm, Pt
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
+import re
 import sys
 import csv
 import subprocess
@@ -34,7 +35,7 @@ def create_slides(lines):
           next_space = "    "
         if " " == row[0]:
           next_space = ""
-        if row[0].strip().endswith("वाच") or row[0].strip().endswith("ऊचुः") or "इति श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां" in row[0]:
+        if row[0].strip().endswith("वाच") or row[0].strip().endswith("ऊचुः") or re.search(r"इति श्रीमद्भागवते महापुराणे .*पारमहंस्यां संहितायां", row[0]):
           line_color = RGBColor(0xFF, 0x7F, 0x50)
           next_space = ""
         if row == count:
@@ -119,7 +120,7 @@ for row in lyricsdata:
         sys.exit()
       firstrow=True
     else:
-      if "इति श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां" in row[0]:
+      if re.search(r"इति श्रीमद्भागवते महापुराणे .*पारमहंस्यां संहितायां", row[0]):
         last_line = row[0]
       else:
         lines.append(row)
@@ -139,17 +140,16 @@ shapes = slide.shapes
 title_shape = shapes.title
 title_shape.text = titletext
 picture = shapes.placeholders[10].insert_picture('C:/Users/rajar/Pictures/Bhagavatham10/' + adyayam_number + '.png')
-shapes.placeholders[13].text_frame.text = "इति श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां"
+#shapes.placeholders[13].text_frame.text = "इति श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां"
 
-found=False
-last_line_words=last_line.replace("इति श्रीमद्भागवते महापुराणे पारमहंस्यां संहितायां ","").split(" ")
-for word in last_line_words:
-  if "ऽध्यायः" in word:
-    found=True
-  if not found:
-    shapes.placeholders[14].text_frame.text = shapes.placeholders[14].text_frame.text + " " + word
-  else:
-    shapes.placeholders[12].text_frame.text = shapes.placeholders[12].text_frame.text + " " + word
+m=re.search(r"(इति श्रीमद्भागवते महापुराणे .*पारमहंस्यां संहितायां)\s(.*)\s(.*ऽध्यायः\s.*)", last_line)
+if m == None:
+  input("Last line of chapter" + adyayam_number + ".txt is not in known format. Press any key to continue")
+  sys.exit()
+else:
+  shapes.placeholders[13].text_frame.text = m.group(1)
+  shapes.placeholders[14].text_frame.text = m.group(2)
+  shapes.placeholders[12].text_frame.text = m.group(3)
 
 prs.save('generated-ppt.pptm')
 

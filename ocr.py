@@ -1,4 +1,3 @@
-#!/opt/homebrew/bin/python3
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -29,7 +28,14 @@ if len(sys.argv) == 5:
   working_folder = sys.argv[4] + "/"
 archive_folder="archive/"
 
-driver = webdriver.Chrome()
+try:
+  driver = webdriver.Chrome()
+except BaseException as err:
+  print("Error",err)
+  print("Download correct version of chromedriver\n\tFrom: https://chromedriver.chromium.org/downloads\n\tand save into C:\\Users\\rajar\\AppData\\Local\\Microsoft\\WindowsApps\\")
+  input("Press enter to exit")
+  sys.exit(1)
+
 driver.get("https://ocr.sanskritdictionary.com/")
 driver.implicitly_wait(30)
 
