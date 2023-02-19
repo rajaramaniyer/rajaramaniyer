@@ -19,13 +19,14 @@ def getTimeString(totalmilliseconds):
 #
 # Main Code Starts
 #
+canto="1"
 if len(sys.argv) != 2:
   file_adyayam_number=""
   if path.exists("adyayam_number.txt"):
     f=open("adyayam_number.txt")
     file_adyayam_number = f.readlines()[0]
     f.close()
-  adyayam_number = input ("Adhyayam Number(" + file_adyayam_number + "): ")
+  adyayam_number = input ("Canto " + canto.zfill(2) + " Adhyayam Number?(" + file_adyayam_number + "): ")
   if adyayam_number == "" and file_adyayam_number != "":
     adyayam_number = file_adyayam_number
 else:
@@ -34,7 +35,9 @@ f=open("adyayam_number.txt", "w")
 f.write(adyayam_number)
 f.close()
 
-wavefilename="c:/Users/rajar/Documents/Thirupavai/Exported/Bhagavatham/10-" + str(adyayam_number) + ".wav"
+ASTRING='SB-' + canto.zfill(2) + '-' + adyayam_number.zfill(2)
+
+wavefilename="c:/Users/rajar/Documents/Thirupavai/Exported/Bhagavatham/"+canto.zfill(2)+"-" + adyayam_number.zfill(2) + ".wav"
 if not os.path.exists(wavefilename):
     input(wavefilename + " does not exists")
     sys.exit()
@@ -46,23 +49,8 @@ with contextlib.closing(wave.open(wavefilename,'r')) as f:
     rate = f.getframerate()
     durationMilliSeconds = round(float(frames) / float(rate) * 1000.0)
     duration = getTimeString(durationMilliSeconds)
-    #print(frames, rate, durationMilliSeconds, duration)
-    #mins=0
-    #roundSeconds=math.floor(seconds)
-    #print(seconds, roundSeconds, math.floor((seconds-roundSeconds)*1000/25)*25)
-    #duration="00:%02.0f:%02.0f.%03.0f" %(mins, roundSeconds, math.floor((seconds-roundSeconds)*1000/25)*25)
-# wavefile = wave.open(wavefilename, 'rb')
-# channels = wavefile.getnchannels()
-# frames = wavefile.getnframes()
-# rate = wavefile.getframerate()
-# durationMilliSeconds = round(float(frames) / float(rate) * 1000.0)
-# duration=getTimeString(durationMilliSeconds)
-# #sampwidth = wavefile.getsampwidth()
-# #data = wavefile.readframes(frames) #read the all the samples from the file into a byte string
-# #audioframes=round(frames / float(rate) * 25)
-# wavefile.close()
 
-labelTrackFile='adhyayam' + str(adyayam_number) + '.txt'
+labelTrackFile=ASTRING + '.txt'
 if not os.path.exists(labelTrackFile):
     input(labelTrackFile + " does not exists")
     sys.exit()
@@ -72,6 +60,9 @@ labelTrack = file1.readlines()
 file1.close()
 
 audioHash=uuid.uuid4().hex
+
+tractor_id=0
+transition_id=0
 
 block1=[]
 block2=[]
@@ -86,7 +77,11 @@ block4.append('    <property name="shotcut:video">1</property>\n')
 block4.append('    <property name="shotcut:name">V1</property>\n')
 
 id=0
-files=sorted(glob.glob("Slide????.jpg"))
+files=sorted(glob.glob(ASTRING + "-Slide????.jpg"))
+
+if len(files) == 0:
+    print("Slides are missing. run generate-ppt")
+    input ("Press enter to continue...")
 
 equalslideduration=getTimeString(round(durationMilliSeconds/len(files)))
 if len(labelTrack) > 0 and len(files)-1 != len(labelTrack):
@@ -101,8 +96,7 @@ if len(labelTrack) > 0 and len(files)-1 != len(labelTrack):
             id+=1
     print("WARNING: labelTrack and slideCount are Not in sync.")
     print("There are %d labels while there are %d slides" %(len(labelTrack), len(files)))
-    #print("Setting all slide's duration equal, which is %s" %(equalslideduration))
-    input ("Press enter to continue: ")
+    input ("Press enter to continue...")
 
 id=0
 currentTime=time.strftime("%Y-%m-%dT%H:%M:%S",time.localtime())
@@ -125,6 +119,9 @@ for slidename in files:
         slideduration="00:%02.0f:%02.0f.%03.0f" %(mins, roundSeconds, microframes)
     else:
         slideduration=equalslideduration
+    sd=slideduration.split(':')
+    t=(float(sd[1])*60)+float(sd[2])-0.52
+    tstart="00:%02.0f:%02.3f" %(int(t/60), t%60)
     #
     hashvalue=uuid.uuid4().hex
     #
@@ -141,6 +138,30 @@ for slidename in files:
     block1.append('    <property name="shotcut:hash">{hashvalue}</property>\n'.format(hashvalue=hashvalue))
     block1.append('    <property name="xml">was here</property>\n')
     block1.append('  </producer>\n')
+
+    if 'Slide0001' not in slidename:
+        block1.append('  <tractor id="tractor{tractor_id}" in="00:00:00.000" out="00:00:00.520">\n'.format(tractor_id=tractor_id))
+        block1.append('    <property name="shotcut:transition">lumaMix</property>\n')
+        block1.append('    <track producer="producer{id}" in="{tstart}" out="{slideduration}"/>\n'.format(id=id-1,tstart=tstart,slideduration=slideduration))
+        block1.append('    <track producer="producer{id}" in="00:00:00.000" out="00:00:00.520"/>\n'.format(id=id))
+        block1.append('    <transition id="transition{transition_id}" out="00:00:00.520">\n'.format(transition_id=transition_id))
+        block1.append('      <property name="a_track">0</property>\n')
+        block1.append('      <property name="b_track">1</property>\n')
+        block1.append('      <property name="factory">loader</property>\n')
+        block1.append('      <property name="mlt_service">luma</property>\n')
+        block1.append('      <property name="alpha_over">1</property>\n')
+        block1.append('    </transition>\n')
+        block1.append('    <transition id="transition{transition_id}" out="00:00:00.520">\n'.format(transition_id=transition_id+1))
+        block1.append('      <property name="a_track">0</property>\n')
+        block1.append('      <property name="b_track">1</property>\n')
+        block1.append('      <property name="start">-1</property>\n')
+        block1.append('      <property name="accepts_blanks">1</property>\n')
+        block1.append('      <property name="mlt_service">mix</property>\n')
+        block1.append('    </transition>\n')
+        block1.append('  </tractor>\n')
+        tractor_id+=1
+        transition_id+=2
+
     #
     block2.append('    <entry producer="producer{id}" in="00:00:00.000" out="00:00:03.960"/>\n'.format(id=id))
     #
@@ -159,7 +180,8 @@ for slidename in files:
     block3.append('    <property name="shotcut:caption">{slidename}</property>\n'.format(slidename=slidename))
     block3.append('  </producer>\n')
     #
-    block4.append('    <entry producer="producer{id}" in="00:00:00.000" out="{slideduration}"/>\n'.format(id=id+len(files),slideduration=slideduration))
+    block4.append('    <entry producer="producer{id}" in="00:00:00.000" out="{slideduration}"/>\n'.format(id=id+len(files),slideduration=tstart))
+    block4.append('    <entry producer="tractor{tractor_id}" in="00:00:00.000" out="00:00:00.520"/>\n'.format(tractor_id=tractor_id))
     #
     id=id+1
 #
@@ -195,21 +217,21 @@ block4.append('    <property name="shotcut:audio">1</property>\n')
 block4.append('    <property name="shotcut:name">A1</property>\n')
 block4.append('    <entry producer="chain1" in="00:00:00.000" out="{duration}"/>\n'.format(duration=duration))
 block4.append('  </playlist>\n')
-block4.append('  <tractor id="tractor0" title="Shotcut version 21.10.31" in="00:00:00.000" out="{duration}">\n'.format(duration=duration))
+block4.append('  <tractor id="tractor{tractor_id}" title="Shotcut version 21.10.31" in="00:00:00.000" out="{duration}">\n'.format(tractor_id=tractor_id,duration=duration))
 block4.append('    <property name="shotcut">1</property>\n')
 block4.append('    <property name="shotcut:projectAudioChannels">2</property>\n')
 block4.append('    <property name="shotcut:projectFolder">0</property>\n')
 block4.append('    <track producer="background"/>\n')
 block4.append('    <track producer="playlist0"/>\n')
 block4.append('    <track producer="playlist1" hide="video"/>\n')
-block4.append('    <transition id="transition0">\n')
+block4.append('    <transition id="transition{transition_id}">\n'.format(transition_id=transition_id))
 block4.append('      <property name="a_track">0</property>\n')
 block4.append('      <property name="b_track">1</property>\n')
 block4.append('      <property name="mlt_service">mix</property>\n')
 block4.append('      <property name="always_active">1</property>\n')
 block4.append('      <property name="sum">1</property>\n')
 block4.append('    </transition>\n')
-block4.append('    <transition id="transition1">\n')
+block4.append('    <transition id="transition{transition_id}">\n'.format(transition_id=(transition_id+1)))
 block4.append('      <property name="a_track">0</property>\n')
 block4.append('      <property name="b_track">1</property>\n')
 block4.append('      <property name="version">0.9</property>\n')
@@ -217,7 +239,7 @@ block4.append('      <property name="mlt_service">frei0r.cairoblend</property>\n
 block4.append('      <property name="threads">0</property>\n')
 block4.append('      <property name="disable">1</property>\n')
 block4.append('    </transition>\n')
-block4.append('    <transition id="transition2">\n')
+block4.append('    <transition id="transition{transition_id}">\n'.format(transition_id=(transition_id+2)))
 block4.append('      <property name="a_track">0</property>\n')
 block4.append('      <property name="b_track">2</property>\n')
 block4.append('      <property name="mlt_service">mix</property>\n')
@@ -228,7 +250,7 @@ block4.append('  </tractor>\n')
 block4.append('</mlt>\n')
 
 dir_path = os.path.dirname(os.path.realpath(__file__)).replace("\\","/")
-filename="adhyayam" + str(adyayam_number) + ".mlt"
+filename=ASTRING + ".mlt"
 f = open(filename, "w")
 
 f.write('<?xml version="1.0" standalone="no"?>\n')

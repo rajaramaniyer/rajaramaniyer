@@ -15,17 +15,19 @@ import re
 # Main Code Starts
 #
 if len(sys.argv) < 4:
+  canto_number =  input ("Canto Number: ")
   adyayam_number = input ("Adhyayam Number: ")
   from_image = int(input ("From Image Number: "))
   to_image = int(input ("To Image Number: "))
 else:
-  adyayam_number=sys.argv[1]
-  from_image = int(sys.argv[2])
-  to_image = int(sys.argv[3])
+  canto_number=sys.argv[1]
+  adyayam_number=sys.argv[2]
+  from_image = int(sys.argv[3])
+  to_image = int(sys.argv[4])
 root_folder="D:/Books/Bhagavatham/"
 working_folder="jpg_with_hindi_anuvad/"
-if len(sys.argv) == 5:
-  working_folder = sys.argv[4] + "/"
+if len(sys.argv) == 6:
+  working_folder = sys.argv[5] + "/"
 archive_folder="archive/"
 
 try:
@@ -39,10 +41,10 @@ except BaseException as err:
 driver.get("https://ocr.sanskritdictionary.com/")
 driver.implicitly_wait(30)
 
-outputFile=open("C:/Users/rajar/srimad_bhaghavatham/sanskrit/canto10/chapter" + adyayam_number + ".txt", 'w', encoding='UTF-8')
+outputFile=open("C:/Users/rajar/srimad_bhaghavatham/sanskrit/canto"+canto_number.zfill(2)+"/chapter" + adyayam_number.zfill(2) + ".txt", 'w', encoding='UTF-8')
 
 while from_image <= to_image:
-    imageFileName="page-%04d.jpg" %(from_image)
+    imageFileName="श्रीमद्भागवत महापुराण 1_page-%04d.jpg" %(from_image)
     fullArchiveFileName=root_folder + archive_folder + imageFileName
     fullImageFileName=root_folder + working_folder + imageFileName
     if not os.path.exists(fullImageFileName):

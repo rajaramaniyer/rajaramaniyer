@@ -22,12 +22,23 @@ f=open("adyayam_number.txt", "w")
 f.write(adyayam_number)
 f.close()
 
-filename="C:/Users/rajar/srimad_bhaghavatham/sanskrit/canto10/chapter" + adyayam_number + ".txt"
+filename="C:/Users/rajar/srimad_bhaghavatham/sanskrit/canto01/chapter" + adyayam_number.zfill(2) + ".txt"
 file = open(filename, 'r', encoding="UTF-8")
 data = file.read()
 file.close()
 
 file = open(filename, "wt", encoding="UTF-8")
+data=re.sub(r"1","१", data)
+data=re.sub(r"2","२", data)
+data=re.sub(r"3","३", data)
+data=re.sub(r"4","४", data)
+data=re.sub(r"5","५", data)
+data=re.sub(r"6","६", data)
+data=re.sub(r"7","७", data)
+data=re.sub(r"8","८", data)
+data=re.sub(r"9","९", data)
+data=re.sub(r"0","०", data)
+
 data=re.sub(r"-[१२३४५६७८९०]+(।|॥)\n", "",
     re.sub(r"(.*)( लगे |यह | कहीं | कीजिये | रहे | हूँ | सारी | निकले | गयीं |उन्होंने |कीजिये |इसका |उन्हें |तुम | उनकी | तुमने | मेरे | करके | मैं | इन्हें | मैंने |उनका |उसकी | आये | हुए | लोगे | मालूम | लौट | हई |के पास | अपने | तरह | कई |हम | लोग | कोसके | कुचल | करें | डाला| गिर | अपनेसे )(.*)\n", "",
       re.sub(r"(.*)( है | हैं | थे | की |होंगे | अब | थीं |जिस | में | दिया |और | थी | था | गये | करेंगे |उसके |उनके | हुआ | गयी | वह |लिये |साथ |सुनी | नहीं |होना |चाहिये |बाद |पहुँचे |आप |इस | गया | करेगा | किसी |उसने |उसे |उस |किया |पड़ेगा |तब )(.*)\n", "",
@@ -56,6 +67,7 @@ data=re.sub(r"-[१२३४५६७८९०]+(।|॥)\n", "",
 data=re.sub(r"(.*)( लगते | तुम्हारी | आपकी | आपका | अपनी | कर लो | करो | उतना | गिरते | सुनकर | हरा-भरा | ले लेते| लगाया | किसीका | इसी | बहुत | करती | इसमें | ओर )(.*)\n", "",
   data
 )
+
 file.write(data)
 file.close()
 
